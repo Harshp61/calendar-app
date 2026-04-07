@@ -516,24 +516,46 @@ export default function WallCalendar() {
                         const label = `${sDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric'})} - ${eDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric'})}`;
                         
                         return (
-                          <button 
-                            key={key}
-                            type="button"
-                            onClick={() => {
-                              setRangeStart(sDate);
-                              setRangeEnd(eDate);
-                              const cur = monthStart(viewDate);
-                              const target = monthStart(sDate);
-                              if (target.getTime() !== cur.getTime() && flipPhase === "idle") {
-                                setPendingMonthTarget(target);
-                                setFlipPhase(target.getTime() > cur.getTime() ? "out-next" : "out-prev");
-                              }
-                            }}
-                            className="w-full text-left cursor-pointer text-[10px] bg-zinc-50/80 p-1.5 rounded hover:bg-zinc-100 flex flex-col gap-0.5 border border-zinc-100 focus:outline-none focus:ring-1 focus:ring-sky-200 transition-colors"
-                          >
-                            <span className="font-semibold text-sky-600 text-[9px] leading-tight">{label}</span>
-                            <span className="text-zinc-600 truncate leading-tight w-full" title={note}>{note}</span>
-                          </button>
+                          <div key={key} className="flex items-center gap-1 w-full bg-zinc-50/80 p-1.5 rounded border border-zinc-100 hover:bg-zinc-100 focus-within:ring-1 focus-within:ring-sky-200 transition-colors">
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                setRangeStart(sDate);
+                                setRangeEnd(eDate);
+                                const cur = monthStart(viewDate);
+                                const target = monthStart(sDate);
+                                if (target.getTime() !== cur.getTime() && flipPhase === "idle") {
+                                  setPendingMonthTarget(target);
+                                  setFlipPhase(target.getTime() > cur.getTime() ? "out-next" : "out-prev");
+                                }
+                              }}
+                              className="flex-1 text-left cursor-pointer text-[10px] flex flex-col gap-0.5 focus:outline-none overflow-hidden"
+                            >
+                              <span className="font-semibold text-sky-600 text-[9px] leading-tight">{label}</span>
+                              <span className="text-zinc-600 truncate leading-tight w-full" title={note}>{note}</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="text-zinc-400 hover:text-red-500 hover:bg-red-50 p-1 rounded transition-colors focus:outline-none flex-shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRangeNotes((prev) => {
+                                  const updated = { ...prev };
+                                  delete updated[key];
+                                  return updated;
+                                });
+                                if (selectedRangeKey === key) {
+                                  setRangeStart(null);
+                                  setRangeEnd(null);
+                                }
+                              }}
+                              title="Remove Task"
+                            >
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
+                              </svg>
+                            </button>
+                          </div>
                         );
                       })}
                     </div>
