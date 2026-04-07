@@ -5,18 +5,18 @@ import { useMemo, useState } from "react";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MONTH_IMAGE_BY_MONTH_INDEX = [
-  "/comp8.png", // Jan
-  "/comp1.jpg", // Feb
-  "/comp2.jpg", // Mar
-  "/comp3.jpg", // Apr
-  "/comp4.jpg", // May
-  "/comp5.jpg", // Jun
-  "/comp6.png", // Jul
-  "/comp7.webp", // Aug
-  "/comp9.jpg", // Sep
-  "/comp10.jpg", // Oct
-  "/comp11.jpg", // Nov
-  "/comp12.webp", // Dec
+  "/calendar-images/comp8.png", // Jan
+  "/calendar-images/comp1.jpg", // Feb
+  "/calendar-images/comp2.jpg", // Mar
+  "/calendar-images/comp3.jpg", // Apr
+  "/calendar-images/comp4.jpg", // May
+  "/calendar-images/comp5.jpg", // Jun
+  "/calendar-images/comp6.png", // Jul
+  "/calendar-images/comp7.webp", // Aug
+  "/calendar-images/comp9.jpg", // Sep
+  "/calendar-images/comp10.jpg", // Oct
+  "/calendar-images/comp11.jpg", // Nov
+  "/calendar-images/comp12.webp", // Dec
 ];
 const HOLIDAYS_CSV = `Date,Holiday Name,Type
 2026-01-01,New Year's Day,National

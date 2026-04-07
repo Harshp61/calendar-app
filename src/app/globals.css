@@ -33,7 +33,7 @@ html {
       rgba(255, 255, 255, 0.018) 2px,
       rgba(0, 0, 0, 0.02) 3px,
       rgba(0, 0, 0, 0.02) 4px),
-    url("/wall.webp"),
+    url("/calendar-images/wall.webp"),
     linear-gradient(180deg, #7d848e 0%, #656b75 48%, #5a6069 100%);
   background-size: cover, cover, auto, cover, cover;
   background-position: center, center, center, center, center;
@@ -49,7 +49,7 @@ body {
       rgba(255, 255, 255, 0.018) 2px,
       rgba(0, 0, 0, 0.02) 3px,
       rgba(0, 0, 0, 0.02) 4px),
-    url("/wall.webp"),
+    url("/calendar-images/wall.webp"),
     linear-gradient(180deg, #7d848e 0%, #656b75 48%, #5a6069 100%);
   background-size: cover, cover, auto, cover, cover;
   background-position: center, center, center, center, center;
@@ -69,7 +69,7 @@ body {
       rgba(255, 255, 255, 0.018) 2px,
       rgba(0, 0, 0, 0.02) 3px,
       rgba(0, 0, 0, 0.02) 4px),
-    url("/wall.webp"),
+    url("/calendar-images/wall.webp"),
     linear-gradient(180deg, #7d848e 0%, #656b75 48%, #5a6069 100%);
   background-size: cover, cover, auto, cover, cover;
   background-position: center, center, center, center, center;
