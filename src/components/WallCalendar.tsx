@@ -164,6 +164,21 @@ export default function WallCalendar() {
     MONTH_IMAGE_BY_MONTH_INDEX[previewDate.getMonth()];
   const holidayMap = useMemo(() => parseHolidayCsv(HOLIDAYS_CSV), []);
 
+  const flutterAnimations = [
+    { anim: "pageFlutter1", dur: "0.96s", delay: "0s" },
+    { anim: "pageFlutter2", dur: "1.14s", delay: "0.2s" },
+    { anim: "pageFlutter1", dur: "0.9s", delay: "0.4s" },
+    { anim: "pageFlutter3", dur: "1.2s", delay: "0.1s" },
+    { anim: "pageFlutter2", dur: "1.02s", delay: "0.3s" },
+    { anim: "pageFlutter1", dur: "1.14s", delay: "0.5s" },
+    { anim: "pageFlutter3", dur: "0.96s", delay: "0.15s" },
+    { anim: "pageFlutter2", dur: "1.08s", delay: "0.35s" },
+    { anim: "pageFlutter1", dur: "1.02s", delay: "0.25s" },
+    { anim: "pageFlutter3", dur: "1.2s", delay: "0.45s" },
+    { anim: "pageFlutter2", dur: "0.9s", delay: "0.1s" },
+    { anim: "pageFlutter1", dur: "1.26s", delay: "0.4s" },
+  ];
+
   const selectedRangeKey =
     rangeStart && rangeEnd ? rangeKey(rangeStart, rangeEnd) : null;
 
@@ -175,8 +190,8 @@ export default function WallCalendar() {
     rangeStart && rangeEnd
       ? `${rangeStart.toDateString()} - ${rangeEnd.toDateString()}`
       : rangeStart
-      ? `${rangeStart.toDateString()} - Select end date`
-      : "Pick a start date";
+        ? `${rangeStart.toDateString()} - Select end date`
+        : "Pick a start date";
 
   const monthStart = (d: Date) =>
     new Date(d.getFullYear(), d.getMonth(), 1);
@@ -287,8 +302,8 @@ export default function WallCalendar() {
         ].join(" ")}
       >
         {/* Edge thickness + swirly side stack */}
-        <div className="pointer-events-none absolute right-0 top-12 bottom-7 z-20 w-[10px] bg-gradient-to-l from-zinc-300/85 via-zinc-100/80 to-transparent" />
-        <div className="pointer-events-none absolute right-[2px] top-12 bottom-7 z-20 flex w-[7px] flex-col justify-evenly">
+        <div className="pointer-events-none absolute right-0 top-0 bottom-7 z-20 w-[10px] bg-gradient-to-l from-zinc-300/85 via-zinc-100/80 to-transparent" />
+        <div className="pointer-events-none absolute right-[2px] top-0 bottom-7 z-20 flex w-[7px] flex-col justify-evenly">
           {Array.from({ length: 12 }).map((_, i) => (
             <span
               key={`edge-${i}`}
@@ -296,24 +311,12 @@ export default function WallCalendar() {
             />
           ))}
         </div>
-        <div className="pointer-events-none absolute right-[1px] top-28 z-20 flex flex-col gap-[7px]">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <span
-              key={`curl-${i}`}
-              className={[
-                "block h-[6px] rounded-l-full border-l border-t border-zinc-400/35",
-                i % 2 === 0 ? "w-[8px]" : "w-[6px]",
-              ].join(" ")}
-            />
-          ))}
-        </div>
 
         {/* Hand-crafted spiral binding (no image) */}
         <div className="relative bg-zinc-100 pt-3 pb-2 border-b border-zinc-300/70 overflow-hidden">
-          {/* Nail pinned through spiral center */}
-          <div className="pointer-events-none absolute left-1/2 top-[2px] z-30 -translate-x-1/2">
-            <div className="mx-auto h-3.5 w-3.5 rounded-full bg-zinc-600 shadow-[0_2px_6px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.35)]" />
-            <div className="mx-auto -mt-[1px] h-6 w-[2px] bg-zinc-500/95 shadow-[0_0_2px_rgba(0,0,0,0.4)]" />
+          {/* Round nail head embedded in wall */}
+          <div className="pointer-events-none absolute left-1/2 top-[5px] z-30 -translate-x-1/2">
+            <div className="h-4 w-4 rounded-full bg-gradient-to-br from-zinc-400 via-zinc-600 to-zinc-800 shadow-[0_3px_8px_rgba(0,0,0,0.55),inset_0_1px_2px_rgba(255,255,255,0.4),inset_0_-1px_2px_rgba(0,0,0,0.3)]" />
           </div>
           <div className="mx-auto w-[90%]">
             <div className="h-[6px] rounded-full bg-zinc-700 shadow-[0_2px_3px_rgba(0,0,0,0.25)]" />
@@ -339,14 +342,14 @@ export default function WallCalendar() {
           {flipBusy ? (
             <div className="absolute inset-0 z-0 bg-white">
               {/* HERO PREVIEW */}
-            <div className="relative bg-white overflow-hidden [backface-visibility:hidden]">
+              <div className="relative bg-white overflow-hidden [backface-visibility:hidden]">
                 <Image
                   src={previewMonthHeroImage}
                   alt="Hiking"
                   width={1024}
                   height={768}
                   priority
-                className="block h-64 w-full object-cover object-left [transform:translateZ(0)]"
+                  className="block h-64 w-full object-cover object-left [transform:translateZ(0)]"
                 />
                 <div className="pointer-events-none absolute top-0 right-0 h-16 w-28 bg-sky-500/55 [clip-path:polygon(100%_0,0_0,100%_100%)]" />
                 <div className="pointer-events-none absolute bottom-0 left-0 h-20 w-36 bg-sky-500/55 [clip-path:polygon(0_100%,0_20%,100%_100%)]" />
@@ -586,12 +589,12 @@ export default function WallCalendar() {
             </div>
           </div>
 
-            {/* PAPER CURL */}
-            <div className="relative h-6 bg-white">
-              <div className="absolute left-0 bottom-0 w-1/2 h-6 bg-white shadow-[0_10px_15px_rgba(0,0,0,0.25)] rounded-br-full" />
-              <div className="absolute right-0 bottom-0 w-1/2 h-6 bg-white shadow-[0_10px_15px_rgba(0,0,0,0.25)] rounded-bl-full" />
-            </div>
+          {/* PAPER CURL */}
+          <div className="relative h-6 bg-white">
+            <div className="absolute left-0 bottom-0 w-1/2 h-6 bg-white shadow-[0_10px_15px_rgba(0,0,0,0.25)] rounded-br-full" />
+            <div className="absolute right-0 bottom-0 w-1/2 h-6 bg-white shadow-[0_10px_15px_rgba(0,0,0,0.25)] rounded-bl-full" />
           </div>
+        </div>
 
       </div>
     </section>
