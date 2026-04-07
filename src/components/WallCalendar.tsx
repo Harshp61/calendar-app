@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MONTH_IMAGE_BY_MONTH_INDEX = [
@@ -135,6 +135,52 @@ export default function WallCalendar() {
   const [rangeEnd, setRangeEnd] = useState<Date | null>(null);
   const [monthNotes, setMonthNotes] = useState<Record<string, string>>({});
   const [rangeNotes, setRangeNotes] = useState<Record<string, string>>({});
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const storedMonthNotes = localStorage.getItem("calendar_month_notes");
+      const storedRangeNotes = localStorage.getItem("calendar_range_notes");
+      const storedRangeStart = localStorage.getItem("calendar_range_start");
+      const storedRangeEnd = localStorage.getItem("calendar_range_end");
+
+      if (storedMonthNotes) setMonthNotes(JSON.parse(storedMonthNotes));
+      if (storedRangeNotes) setRangeNotes(JSON.parse(storedRangeNotes));
+      if (storedRangeStart) setRangeStart(new Date(storedRangeStart));
+      else if (storedRangeStart === "") setRangeStart(null); // Just in case
+      if (storedRangeEnd) setRangeEnd(new Date(storedRangeEnd));
+    } catch (e) {
+      console.error("Failed to load from local storage", e);
+    }
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem("calendar_month_notes", JSON.stringify(monthNotes));
+    }
+  }, [monthNotes, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem("calendar_range_notes", JSON.stringify(rangeNotes));
+    }
+  }, [rangeNotes, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      if (rangeStart) localStorage.setItem("calendar_range_start", rangeStart.toISOString());
+      else localStorage.removeItem("calendar_range_start");
+    }
+  }, [rangeStart, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      if (rangeEnd) localStorage.setItem("calendar_range_end", rangeEnd.toISOString());
+      else localStorage.removeItem("calendar_range_end");
+    }
+  }, [rangeEnd, isLoaded]);
+
   type FlipPhase = "idle" | "out-next" | "out-prev";
   const [flipPhase, setFlipPhase] = useState<FlipPhase>("idle");
   const [pendingMonthTarget, setPendingMonthTarget] = useState<Date | null>(
