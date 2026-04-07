@@ -4,6 +4,50 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const MONTH_IMAGE_BY_MONTH_INDEX = [
+  "/comp8.png", // Jan
+  "/comp1.jpg", // Feb
+  "/comp2.jpg", // Mar
+  "/comp3.jpg", // Apr
+  "/comp4.jpg", // May
+  "/comp5.jpg", // Jun
+  "/comp6.png", // Jul
+  "/comp7.webp", // Aug
+  "/comp9.jpg", // Sep
+  "/comp10.jpg", // Oct
+  "/comp11.jpg", // Nov
+  "/comp12.webp", // Dec
+];
+const HOLIDAYS_CSV = `Date,Holiday Name,Type
+2026-01-01,New Year's Day,National
+2026-01-14,Makar Sankranti / Pongal,Hindu
+2026-01-26,Republic Day,National
+2026-02-02,Basant Panchami,Hindu
+2026-02-19,Chhatrapati Shivaji Maharaj Jayanti,Observance
+2026-02-26,Maha Shivaratri,Hindu
+2026-03-20,Holi,Hindu
+2026-03-30,Ram Navami,Hindu
+2026-04-02,Mahavir Jayanti,Jain
+2026-04-03,Good Friday,Christian
+2026-04-05,Easter Sunday,Christian
+2026-04-06,Eid ul-Fitr (Ramzan Eid),Muslim
+2026-04-14,Dr. Ambedkar Jayanti,Observance
+2026-04-14,Baisakhi / Vishu / Tamil New Year,Hindu
+2026-05-05,Buddha Purnima,Buddhist
+2026-06-13,Eid ul-Adha (Bakrid),Muslim
+2026-07-03,Muharram,Muslim
+2026-08-15,Independence Day,National
+2026-08-16,Janmashtami,Hindu
+2026-09-03,Ganesh Chaturthi,Hindu
+2026-09-12,Milad-un-Nabi (Eid-e-Milad),Muslim
+2026-10-02,Gandhi Jayanti,National
+2026-10-14,Dussehra (Vijayadashami),Hindu
+2026-10-20,Diwali (Deepavali),Hindu
+2026-10-22,Bhai Dooj,Hindu
+2026-10-27,Guru Nanak Jayanti,Sikh
+2026-11-04,Chhath Puja,Hindu
+2026-12-25,Christmas,Christian
+2026-12-30,Guru Gobind Singh Jayanti,Sikh`;
 
 type CalendarCell = {
   day: number;
@@ -65,6 +109,25 @@ function isWithinRange(target: Date, start: Date, end: Date) {
   return t >= s && t <= e;
 }
 
+function dateKey(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function parseHolidayCsv(csv: string) {
+  const lines = csv.trim().split("\n").slice(1);
+  const holidayMap = new Map<string, string>();
+  for (const line of lines) {
+    const [date, holidayName] = line.split(",");
+    if (!date || !holidayName) continue;
+    const existing = holidayMap.get(date);
+    holidayMap.set(date, existing ? `${existing}, ${holidayName}` : holidayName);
+  }
+  return holidayMap;
+}
+
 export default function WallCalendar() {
   const today = useMemo(() => new Date(), []);
   const [viewDate, setViewDate] = useState(() => new Date());
@@ -72,10 +135,34 @@ export default function WallCalendar() {
   const [rangeEnd, setRangeEnd] = useState<Date | null>(null);
   const [monthNote, setMonthNote] = useState("");
   const [rangeNotes, setRangeNotes] = useState<Record<string, string>>({});
+  type FlipPhase = "idle" | "out-next" | "out-prev";
+  const [flipPhase, setFlipPhase] = useState<FlipPhase>("idle");
+  const [pendingMonthTarget, setPendingMonthTarget] = useState<Date | null>(
+    null
+  );
+
+  const flipBusy = flipPhase !== "idle";
 
   const monthName = viewDate.toLocaleString("en-US", { month: "long" });
   const year = viewDate.getFullYear();
   const cells = useMemo(() => monthGrid(viewDate), [viewDate]);
+  const monthHeroImage = MONTH_IMAGE_BY_MONTH_INDEX[viewDate.getMonth()];
+  const previewDate = useMemo(() => {
+    if (pendingMonthTarget) return pendingMonthTarget;
+    if (flipPhase === "out-next") {
+      return new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
+    }
+    if (flipPhase === "out-prev") {
+      return new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
+    }
+    return viewDate;
+  }, [viewDate, flipPhase, pendingMonthTarget]);
+  const previewMonthName = previewDate.toLocaleString("en-US", { month: "long" });
+  const previewYear = previewDate.getFullYear();
+  const previewCells = useMemo(() => monthGrid(previewDate), [previewDate]);
+  const previewMonthHeroImage =
+    MONTH_IMAGE_BY_MONTH_INDEX[previewDate.getMonth()];
+  const holidayMap = useMemo(() => parseHolidayCsv(HOLIDAYS_CSV), []);
 
   const selectedRangeKey =
     rangeStart && rangeEnd ? rangeKey(rangeStart, rangeEnd) : null;
@@ -90,6 +177,61 @@ export default function WallCalendar() {
       : rangeStart
       ? `${rangeStart.toDateString()} - Select end date`
       : "Pick a start date";
+
+  const monthStart = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), 1);
+
+  const goNextMonth = () => {
+    if (flipBusy) return;
+    setPendingMonthTarget(
+      new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1)
+    );
+    setFlipPhase("out-next");
+  };
+
+  const goPrevMonth = () => {
+    if (flipBusy) return;
+    setPendingMonthTarget(
+      new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1)
+    );
+    setFlipPhase("out-prev");
+  };
+
+  const goToday = () => {
+    if (flipBusy) return;
+    const now = new Date();
+    const target = new Date(now.getFullYear(), now.getMonth(), 1);
+    setPendingMonthTarget(target);
+    if (target.getTime() === monthStart(viewDate).getTime()) return;
+    setFlipPhase(target > viewDate ? "out-next" : "out-prev");
+  };
+
+  const handleFlipTransitionEnd = (
+    e: React.TransitionEvent<HTMLDivElement>
+  ) => {
+    if (e.propertyName !== "transform") return;
+    if (flipPhase === "out-next") {
+      if (pendingMonthTarget) {
+        setViewDate(pendingMonthTarget);
+        setPendingMonthTarget(null);
+      } else {
+        setViewDate(
+          (d) => new Date(d.getFullYear(), d.getMonth() + 1, 1)
+        );
+      }
+      setFlipPhase("idle");
+    } else if (flipPhase === "out-prev") {
+      if (pendingMonthTarget) {
+        setViewDate(pendingMonthTarget);
+        setPendingMonthTarget(null);
+      } else {
+        setViewDate(
+          (d) => new Date(d.getFullYear(), d.getMonth() - 1, 1)
+        );
+      }
+      setFlipPhase("idle");
+    }
+  };
 
   const handleDateClick = (clickedDate: Date, inMonth: boolean) => {
     if (!rangeStart || (rangeStart && rangeEnd)) {
@@ -106,8 +248,16 @@ export default function WallCalendar() {
     }
 
     if (!inMonth) {
-      setViewDate(
-        new Date(clickedDate.getFullYear(), clickedDate.getMonth(), 1)
+      const target = monthStart(clickedDate);
+      const cur = monthStart(viewDate);
+      if (target.getTime() === cur.getTime()) return;
+      if (flipBusy) {
+        setViewDate(target);
+        return;
+      }
+      setPendingMonthTarget(target);
+      setFlipPhase(
+        target.getTime() > cur.getTime() ? "out-next" : "out-prev"
       );
     }
   };
@@ -122,188 +272,326 @@ export default function WallCalendar() {
   };
 
   return (
-    <section className="flex items-center justify-center min-h-screen bg-gray-200 px-4">
-      <div className="w-full max-w-[380px] bg-white rounded-sm overflow-hidden
-      shadow-[0_40px_80px_rgba(0,0,0,0.35)]
-      transform rotate-[0.4deg] hover:rotate-0 hover:-translate-y-1 transition duration-300">
+    <section className="cement-wall relative flex items-center justify-center min-h-dvh w-full px-4 py-10 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(255,255,255,0.16),transparent_55%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_85%,rgba(0,0,0,0.24),transparent_62%)]" />
 
-        {/* 🔥 FULL WIDTH SPIRAL */}
-        <div className="relative h-14 bg-zinc-100 flex items-center justify-center overflow-hidden">
-
-          <div className="flex w-full justify-between px-3 z-10">
-            {Array.from({ length: 30 }).map((_, i) => (
-              <div
-                key={i}
-                className={`w-[2px] ${i % 2 === 0 ? "h-5" : "h-4"} bg-zinc-700 rounded-full`}
-              />
-            ))}
-          </div>
-
-          <div className="absolute top-1 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-zinc-700 bg-white z-20" />
-
-          <div className="absolute top-7 left-0 right-0 h-[1px] bg-zinc-500/70 z-10" />
-
-          <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-b from-black/20 to-transparent" />
+      <div
+        className={[
+          "calendar-sway relative mt-10 w-full max-w-[380px] bg-white rounded-[2px] overflow-hidden",
+          "shadow-[0_55px_85px_rgba(0,0,0,0.33),0_12px_20px_rgba(0,0,0,0.14)]",
+          "before:pointer-events-none before:absolute before:inset-0 before:shadow-[inset_0_1px_0_rgba(255,255,255,0.75),inset_0_-1px_0_rgba(0,0,0,0.08)]",
+          "after:pointer-events-none after:absolute after:-bottom-5 after:left-[8%] after:h-8 after:w-[84%] after:rounded-full after:bg-black/20 after:blur-md",
+          "transform hover:rotate-0 hover:-translate-y-1 transition duration-300",
+          flipBusy ? "[animation-play-state:paused]" : "",
+        ].join(" ")}
+      >
+        {/* Edge thickness + swirly side stack */}
+        <div className="pointer-events-none absolute right-0 top-12 bottom-7 z-20 w-[10px] bg-gradient-to-l from-zinc-300/85 via-zinc-100/80 to-transparent" />
+        <div className="pointer-events-none absolute right-[2px] top-12 bottom-7 z-20 flex w-[7px] flex-col justify-evenly">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <span
+              key={`edge-${i}`}
+              className="block h-[2px] w-full rounded-full bg-zinc-400/35"
+            />
+          ))}
+        </div>
+        <div className="pointer-events-none absolute right-[1px] top-28 z-20 flex flex-col gap-[7px]">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <span
+              key={`curl-${i}`}
+              className={[
+                "block h-[6px] rounded-l-full border-l border-t border-zinc-400/35",
+                i % 2 === 0 ? "w-[8px]" : "w-[6px]",
+              ].join(" ")}
+            />
+          ))}
         </div>
 
-        {/* HERO */}
-        <div className="relative">
-          <Image
-            src="/comp1.jpg"
-            alt="Hiking"
-            width={1024}
-            height={768}
-            priority
-            className="h-64 w-full object-cover object-left"
-          />
+        {/* Hand-crafted spiral binding (no image) */}
+        <div className="relative bg-zinc-100 pt-3 pb-2 border-b border-zinc-300/70 overflow-hidden">
+          {/* Nail pinned through spiral center */}
+          <div className="pointer-events-none absolute left-1/2 top-[2px] z-30 -translate-x-1/2">
+            <div className="mx-auto h-3.5 w-3.5 rounded-full bg-zinc-600 shadow-[0_2px_6px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.35)]" />
+            <div className="mx-auto -mt-[1px] h-6 w-[2px] bg-zinc-500/95 shadow-[0_0_2px_rgba(0,0,0,0.4)]" />
+          </div>
+          <div className="mx-auto w-[90%]">
+            <div className="h-[6px] rounded-full bg-zinc-700 shadow-[0_2px_3px_rgba(0,0,0,0.25)]" />
+            <div className="mt-[-2px] flex items-start justify-between px-1">
+              {Array.from({ length: 14 }).map((_, i) => (
+                <div key={i} className="relative flex flex-col items-center">
+                  <span className="block h-4 w-[8px] rounded-b-full border-[1.6px] border-zinc-700 border-t-0 bg-transparent" />
+                  <span className="mt-1 block h-[4px] w-[3px] rounded-full bg-zinc-300" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-1 h-[2px] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-5 bg-gradient-to-b from-black/[0.08] to-transparent" />
+        </div>
+
+        {/* Vertical roll-over turn from spiral with underlay preview */}
+        <div
+          className="relative z-0 [perspective:1400px]"
+          style={{ perspectiveOrigin: "50% 0%" }}
+        >
+          {flipBusy ? (
+            <div className="absolute inset-0 z-0 bg-white">
+              {/* HERO PREVIEW */}
+            <div className="relative bg-white overflow-hidden [backface-visibility:hidden]">
+                <Image
+                  src={previewMonthHeroImage}
+                  alt="Hiking"
+                  width={1024}
+                  height={768}
+                  priority
+                className="block h-64 w-full object-cover object-left [transform:translateZ(0)]"
+                />
+                <div className="pointer-events-none absolute top-0 right-0 h-16 w-28 bg-sky-500/55 [clip-path:polygon(100%_0,0_0,100%_100%)]" />
+                <div className="pointer-events-none absolute bottom-0 left-0 h-20 w-36 bg-sky-500/55 [clip-path:polygon(0_100%,0_20%,100%_100%)]" />
+                <div className="absolute bottom-4 right-4 text-white text-right">
+                  <p className="text-xs tracking-widest opacity-80">{previewYear}</p>
+                  <p className="text-lg font-semibold tracking-[0.25em]">
+                    {previewMonthName.toUpperCase()}
+                  </p>
+                </div>
+              </div>
+              {/* CONTENT PREVIEW */}
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.2fr] gap-4 px-4 py-4 bg-white">
+                <div>
+                  <p className="text-[11px] text-zinc-500 font-semibold mb-2">Notes</p>
+                  <div className="h-20 rounded bg-zinc-50 border border-zinc-100" />
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-[10px] px-2 py-1 text-zinc-400">Prev</p>
+                    <h2 className="text-[11px] tracking-[0.25em] uppercase text-zinc-600 font-semibold">
+                      {previewMonthName}
+                    </h2>
+                    <p className="text-[10px] px-2 py-1 text-zinc-400">Next</p>
+                  </div>
+                  <div className="grid grid-cols-7 text-center">
+                    {WEEKDAYS.map((d) => (
+                      <p key={d} className="text-[9px] text-zinc-400 tracking-wider">
+                        {d}
+                      </p>
+                    ))}
+                    {previewCells.map((cell) => {
+                      const isWeekend =
+                        cell.date.getDay() === 0 || cell.date.getDay() === 6;
+                      return (
+                        <span
+                          key={`preview-${cell.date.toISOString()}`}
+                          className={[
+                            "mx-auto flex h-7 w-7 items-center justify-center rounded-full text-[11px]",
+                            cell.inMonth
+                              ? isWeekend
+                                ? "text-sky-600"
+                                : "text-zinc-800"
+                              : "text-zinc-300",
+                          ].join(" ")}
+                        >
+                          {cell.day}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div
-            className="absolute inset-0 bg-sky-500/90"
+            className="relative z-10 [transform-style:preserve-3d] [backface-visibility:hidden] will-change-transform origin-top"
             style={{
-              clipPath: "polygon(0 70%, 100% 50%, 100% 100%, 0 100%)",
+              transform:
+                flipPhase === "idle"
+                  ? "rotateX(0deg)"
+                  : flipPhase === "out-next"
+                    ? "rotateX(-88deg)"
+                    : "rotateX(88deg)",
+              transition:
+                flipPhase === "out-next" || flipPhase === "out-prev"
+                  ? "transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)"
+                  : "none",
+              boxShadow:
+                flipPhase === "out-next" || flipPhase === "out-prev"
+                  ? "0 16px 38px rgba(0,0,0,0.22)"
+                  : "none",
             }}
-          />
+            onTransitionEnd={handleFlipTransitionEnd}
+          >
+            {/* HERO */}
+            <div className="relative bg-white overflow-hidden [backface-visibility:hidden]">
+              <Image
+                src={monthHeroImage}
+                alt="Hiking"
+                width={1024}
+                height={768}
+                priority
+                className="block h-64 w-full object-cover object-left [transform:translateZ(0)]"
+              />
 
-          <div className="absolute bottom-4 right-4 text-white text-right">
-            <p className="text-xs tracking-widest opacity-80">{year}</p>
-            <p className="text-lg font-semibold tracking-[0.25em]">
-              {monthName.toUpperCase()}
-            </p>
-          </div>
-        </div>
+              <div className="pointer-events-none absolute top-0 right-0 h-16 w-28 bg-sky-500/55 [clip-path:polygon(100%_0,0_0,100%_100%)]" />
+              <div className="pointer-events-none absolute bottom-0 left-0 h-20 w-36 bg-sky-500/55 [clip-path:polygon(0_100%,0_20%,100%_100%)]" />
 
-        {/* CONTENT */}
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.2fr] gap-4 px-4 py-4">
-
-          {/* NOTES */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <p className="text-[11px] text-zinc-500 font-semibold">Notes</p>
-              <button
-                onClick={() => {
-                  setRangeStart(null);
-                  setRangeEnd(null);
-                }}
-                className="text-[10px] text-sky-600 font-semibold"
-              >
-                Clear
-              </button>
-            </div>
-
-            <textarea
-              value={monthNote}
-              onChange={(e) => setMonthNote(e.target.value)}
-              placeholder="Monthly notes..."
-              className="w-full text-xs text-zinc-600 bg-transparent outline-none resize-none"
-            />
-
-            <div className="mt-2 space-y-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-[1px] bg-zinc-200" />
-              ))}
-            </div>
-
-            <p className="mt-3 text-[10px] text-zinc-500 uppercase font-semibold">
-              Range Note
-            </p>
-
-            <textarea
-              value={selectedRangeNote}
-              onChange={(e) => handleRangeNoteChange(e.target.value)}
-              disabled={!selectedRangeKey}
-              placeholder="Select range first..."
-              className="mt-1 w-full text-xs bg-zinc-50 border border-zinc-200 p-2 rounded outline-none disabled:opacity-60"
-            />
-
-            <p className="text-[10px] mt-2 text-zinc-500">{rangeLabel}</p>
-          </div>
-
-          {/* CALENDAR */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <button
-                onClick={() =>
-                  setViewDate(
-                    (d) => new Date(d.getFullYear(), d.getMonth() - 1, 1)
-                  )
-                }
-                className="text-[10px] px-2 py-1 hover:bg-zinc-100 rounded"
-              >
-                Prev
-              </button>
-
-              <h2 className="text-[11px] tracking-[0.25em] uppercase text-zinc-600 font-semibold">
-                {monthName}
-              </h2>
-
-              <button
-                onClick={() =>
-                  setViewDate(
-                    (d) => new Date(d.getFullYear(), d.getMonth() + 1, 1)
-                  )
-                }
-                className="text-[10px] px-2 py-1 hover:bg-zinc-100 rounded"
-              >
-                Next
-              </button>
-            </div>
-
-            <div className="grid grid-cols-7 text-center">
-              {WEEKDAYS.map((d) => (
-                <p key={d} className="text-[9px] text-zinc-400 tracking-wider">
-                  {d}
+              <div className="absolute bottom-4 right-4 text-white text-right">
+                <p className="text-xs tracking-widest opacity-80">{year}</p>
+                <p className="text-lg font-semibold tracking-[0.25em]">
+                  {monthName.toUpperCase()}
                 </p>
-              ))}
+              </div>
+            </div>
 
-              {cells.map((cell) => {
-                const isStart =
-                  rangeStart && isSameDate(cell.date, rangeStart);
-                const isEnd =
-                  rangeEnd && isSameDate(cell.date, rangeEnd);
-                const inRange =
-                  rangeStart && rangeEnd
-                    ? isWithinRange(cell.date, rangeStart, rangeEnd)
-                    : false;
-
-                const isToday = isSameDate(cell.date, today);
-                const isWeekend =
-                  cell.date.getDay() === 0 || cell.date.getDay() === 6;
-
-                return (
+            {/* CONTENT */}
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.2fr] gap-4 px-4 py-4 bg-white">
+              {/* NOTES */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-[11px] text-zinc-500 font-semibold">Notes</p>
                   <button
-                    key={cell.date.toISOString()}
-                    onClick={() =>
-                      handleDateClick(cell.date, cell.inMonth)
-                    }
-                    className={[
-                      "mx-auto flex h-7 w-7 items-center justify-center rounded-full text-[11px] transition",
-                      cell.inMonth
-                        ? isWeekend
-                          ? "text-sky-600"
-                          : "text-zinc-800"
-                        : "text-zinc-300",
-                      inRange ? "bg-sky-100 text-sky-700" : "",
-                      isStart || isEnd
-                        ? "bg-sky-500 text-white"
-                        : "hover:bg-zinc-100",
-                      !isStart && !isEnd && isToday
-                        ? "ring-1 ring-sky-400"
-                        : "",
-                    ].join(" ")}
+                    onClick={() => {
+                      setRangeStart(null);
+                      setRangeEnd(null);
+                    }}
+                    className="text-[10px] text-sky-600 font-semibold"
                   >
-                    {cell.day}
+                    Clear
                   </button>
-                );
-              })}
+                </div>
+
+                <textarea
+                  value={monthNote}
+                  onChange={(e) => setMonthNote(e.target.value)}
+                  placeholder="Monthly notes..."
+                  className="w-full text-xs text-zinc-600 bg-transparent outline-none resize-none"
+                />
+
+                <div className="mt-2 space-y-2">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="h-[1px] bg-zinc-200" />
+                  ))}
+                </div>
+
+                <p className="mt-3 text-[10px] text-zinc-500 uppercase font-semibold">
+                  Range Note
+                </p>
+
+                <textarea
+                  value={selectedRangeNote}
+                  onChange={(e) => handleRangeNoteChange(e.target.value)}
+                  disabled={!selectedRangeKey}
+                  placeholder="Select range first..."
+                  className="mt-1 w-full text-xs bg-zinc-50 border border-zinc-200 p-2 rounded outline-none disabled:opacity-60"
+                />
+
+                <p className="text-[10px] mt-2 text-zinc-500">{rangeLabel}</p>
+              </div>
+
+              {/* CALENDAR */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <button
+                    type="button"
+                    onClick={goPrevMonth}
+                    disabled={flipBusy}
+                    className="text-[10px] px-2 py-1 hover:bg-zinc-100 rounded disabled:opacity-50"
+                  >
+                    Prev
+                  </button>
+
+                  <div className="text-center">
+                    <h2 className="text-[11px] tracking-[0.25em] uppercase text-zinc-600 font-semibold">
+                      {monthName}
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={goToday}
+                      disabled={flipBusy}
+                      className="mt-0.5 text-[9px] px-2 py-[2px] rounded border border-zinc-200 text-zinc-500 hover:bg-zinc-100 disabled:opacity-50"
+                    >
+                      Today
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={goNextMonth}
+                    disabled={flipBusy}
+                    className="text-[10px] px-2 py-1 hover:bg-zinc-100 rounded disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-7 text-center">
+                  {WEEKDAYS.map((d) => (
+                    <p key={d} className="text-[9px] text-zinc-400 tracking-wider">
+                      {d}
+                    </p>
+                  ))}
+
+                  {cells.map((cell) => {
+                    const isStart =
+                      rangeStart && isSameDate(cell.date, rangeStart);
+                    const isEnd =
+                      rangeEnd && isSameDate(cell.date, rangeEnd);
+                    const inRange =
+                      rangeStart && rangeEnd
+                        ? isWithinRange(cell.date, rangeStart, rangeEnd)
+                        : false;
+
+                    const isToday = isSameDate(cell.date, today);
+                    const isWeekend =
+                      cell.date.getDay() === 0 || cell.date.getDay() === 6;
+                    const holidayLabel = holidayMap.get(dateKey(cell.date));
+                    const isHoliday = !!holidayLabel;
+                    const holidayClass = cell.inMonth
+                      ? "bg-amber-200 text-black shadow-[inset_0_0_0_1px_rgba(217,119,6,0.42)]"
+                      : "bg-amber-100 text-zinc-800 shadow-[inset_0_0_0_1px_rgba(217,119,6,0.35)]";
+
+                    return (
+                      <button
+                        key={cell.date.toISOString()}
+                        onClick={() => handleDateClick(cell.date, cell.inMonth)}
+                        title={holidayLabel ?? ""}
+                        className={[
+                          "mx-auto flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-medium leading-none transition",
+                          cell.inMonth
+                            ? isWeekend
+                              ? "text-sky-600"
+                              : "text-zinc-800"
+                            : "text-zinc-300",
+                          isStart || isEnd
+                            ? "bg-sky-500 text-white"
+                            : isHoliday
+                              ? holidayClass
+                              : inRange
+                                ? "bg-sky-100 text-sky-700"
+                                : "hover:bg-zinc-100",
+                          !isStart && !isEnd && isToday
+                            ? isHoliday
+                              ? "shadow-[inset_0_0_0_2px_rgba(59,130,246,0.55)]"
+                              : "ring-1 ring-sky-400"
+                            : "",
+                        ].join(" ")}
+                      >
+                        {cell.day}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* PAPER CURL */}
-        <div className="relative h-6 bg-white">
-          <div className="absolute left-0 bottom-0 w-1/2 h-6 bg-white shadow-[0_10px_15px_rgba(0,0,0,0.25)] rounded-br-full" />
-          <div className="absolute right-0 bottom-0 w-1/2 h-6 bg-white shadow-[0_10px_15px_rgba(0,0,0,0.25)] rounded-bl-full" />
-        </div>
+            {/* PAPER CURL */}
+            <div className="relative h-6 bg-white">
+              <div className="absolute left-0 bottom-0 w-1/2 h-6 bg-white shadow-[0_10px_15px_rgba(0,0,0,0.25)] rounded-br-full" />
+              <div className="absolute right-0 bottom-0 w-1/2 h-6 bg-white shadow-[0_10px_15px_rgba(0,0,0,0.25)] rounded-bl-full" />
+            </div>
+          </div>
 
       </div>
     </section>

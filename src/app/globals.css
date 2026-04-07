@@ -19,8 +19,121 @@
   }
 }
 
+html,
 body {
-  background: #e5e7eb;
+  min-height: 100%;
+}
+
+html {
+  background:
+    radial-gradient(900px 520px at 50% 8%, rgba(255, 255, 255, 0.18), transparent 64%),
+    radial-gradient(1200px 700px at 50% 95%, rgba(0, 0, 0, 0.28), transparent 62%),
+    repeating-linear-gradient(
+      14deg,
+      rgba(255, 255, 255, 0.018) 0px,
+      rgba(255, 255, 255, 0.018) 2px,
+      rgba(0, 0, 0, 0.02) 3px,
+      rgba(0, 0, 0, 0.02) 4px
+    ),
+    url("/wall.webp"),
+    linear-gradient(180deg, #7d848e 0%, #656b75 48%, #5a6069 100%);
+  background-size: cover, cover, auto, cover, cover;
+  background-position: center, center, center, center, center;
+  background-blend-mode: soft-light, multiply, normal, normal, normal;
+}
+
+body {
+  background:
+    radial-gradient(900px 520px at 50% 8%, rgba(255, 255, 255, 0.18), transparent 64%),
+    radial-gradient(1200px 700px at 50% 95%, rgba(0, 0, 0, 0.28), transparent 62%),
+    repeating-linear-gradient(
+      14deg,
+      rgba(255, 255, 255, 0.018) 0px,
+      rgba(255, 255, 255, 0.018) 2px,
+      rgba(0, 0, 0, 0.02) 3px,
+      rgba(0, 0, 0, 0.02) 4px
+    ),
+    url("/wall.webp"),
+    linear-gradient(180deg, #7d848e 0%, #656b75 48%, #5a6069 100%);
+  background-size: cover, cover, auto, cover, cover;
+  background-position: center, center, center, center, center;
+  background-blend-mode: soft-light, multiply, normal, normal, normal;
+  background-attachment: fixed;
+  margin: 0;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.cement-wall {
+  background:
+    radial-gradient(900px 520px at 50% 8%, rgba(255, 255, 255, 0.18), transparent 64%),
+    radial-gradient(1200px 700px at 50% 95%, rgba(0, 0, 0, 0.28), transparent 62%),
+    repeating-linear-gradient(
+      14deg,
+      rgba(255, 255, 255, 0.018) 0px,
+      rgba(255, 255, 255, 0.018) 2px,
+      rgba(0, 0, 0, 0.02) 3px,
+      rgba(0, 0, 0, 0.02) 4px
+    ),
+    url("/wall.webp"),
+    linear-gradient(180deg, #7d848e 0%, #656b75 48%, #5a6069 100%);
+  background-size: cover, cover, auto, cover, cover;
+  background-position: center, center, center, center, center;
+  background-blend-mode: soft-light, multiply, normal, normal, normal;
+}
+
+@keyframes calendarSway {
+  0% {
+    transform: translate3d(0, 0px, 3px) rotate(0.95deg);
+  }
+  22% {
+    transform: translate3d(0, -0.8px, 6px) rotate(-0.35deg);
+  }
+  47% {
+    transform: translate3d(0, 0.5px, 4px) rotate(0.72deg);
+  }
+  74% {
+    transform: translate3d(0, -0.35px, 5px) rotate(-0.22deg);
+  }
+  100% {
+    transform: translate3d(0, 0px, 3px) rotate(0.84deg);
+  }
+}
+
+.calendar-sway {
+  transform-origin: top center;
+  animation: calendarSway 10s ease-in-out infinite;
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 18px 22px rgba(0, 0, 0, 0.2));
+}
+
+/* Wall-calendar month flip: horizontal page turn with preview underneath */
+@keyframes pageFlipInNext {
+  from {
+    transform: rotateY(-92deg);
+    opacity: 0.92;
+  }
+  to {
+    transform: rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes pageFlipInPrev {
+  from {
+    transform: rotateY(92deg);
+    opacity: 0.92;
+  }
+  to {
+    transform: rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+.calendar-page-flip-in-next {
+  animation: pageFlipInNext 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.calendar-page-flip-in-prev {
+  animation: pageFlipInPrev 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
