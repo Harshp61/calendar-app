@@ -133,13 +133,16 @@ export default function WallCalendar() {
   const [viewDate, setViewDate] = useState(() => new Date());
   const [rangeStart, setRangeStart] = useState<Date | null>(new Date());
   const [rangeEnd, setRangeEnd] = useState<Date | null>(null);
-  const [monthNote, setMonthNote] = useState("");
+  const [monthNotes, setMonthNotes] = useState<Record<string, string>>({});
   const [rangeNotes, setRangeNotes] = useState<Record<string, string>>({});
   type FlipPhase = "idle" | "out-next" | "out-prev";
   const [flipPhase, setFlipPhase] = useState<FlipPhase>("idle");
   const [pendingMonthTarget, setPendingMonthTarget] = useState<Date | null>(
     null
   );
+
+  const viewMonthKey = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}`;
+  const currentMonthNote = monthNotes[viewMonthKey] || "";
 
   const flipBusy = flipPhase !== "idle";
 
@@ -192,6 +195,10 @@ export default function WallCalendar() {
       : rangeStart
         ? `${rangeStart.toDateString()} - Select end date`
         : "Pick a start date";
+
+  const activeTasks = useMemo(() => {
+    return Object.entries(rangeNotes).filter(([_, note]) => note.trim() !== "");
+  }, [rangeNotes]);
 
   const monthStart = (d: Date) =>
     new Date(d.getFullYear(), d.getMonth(), 1);
@@ -362,9 +369,11 @@ export default function WallCalendar() {
               </div>
               {/* CONTENT PREVIEW */}
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.2fr] gap-4 px-4 py-4 bg-white">
-                <div>
+                <div className="flex flex-col h-full">
                   <p className="text-[11px] text-zinc-500 font-semibold mb-2">Notes</p>
-                  <div className="h-20 rounded bg-zinc-50 border border-zinc-100" />
+                  <div className="flex-1 rounded bg-zinc-50 border border-zinc-100 p-2 text-xs text-zinc-600 overflow-hidden line-clamp-5">
+                    {monthNotes[`${previewDate.getFullYear()}-${String(previewDate.getMonth() + 1).padStart(2, "0")}`] || ""}
+                  </div>
                 </div>
                 <div>
                   <div className="flex justify-between items-center mb-2">
@@ -465,8 +474,13 @@ export default function WallCalendar() {
                 </div>
 
                 <textarea
-                  value={monthNote}
-                  onChange={(e) => setMonthNote(e.target.value)}
+                  value={currentMonthNote}
+                  onChange={(e) =>
+                    setMonthNotes((prev) => ({
+                      ...prev,
+                      [viewMonthKey]: e.target.value,
+                    }))
+                  }
                   placeholder="Monthly notes..."
                   className="w-full text-xs text-zinc-600 bg-transparent outline-none resize-none"
                 />
@@ -486,10 +500,45 @@ export default function WallCalendar() {
                   onChange={(e) => handleRangeNoteChange(e.target.value)}
                   disabled={!selectedRangeKey}
                   placeholder="Select range first..."
-                  className="mt-1 w-full text-xs bg-zinc-50 border border-zinc-200 p-2 rounded outline-none disabled:opacity-60"
+                  className="mt-1 w-full text-xs bg-zinc-50 border border-zinc-200 p-2 rounded outline-none disabled:opacity-60 min-h-[40px]"
                 />
 
-                <p className="text-[10px] mt-2 text-zinc-500">{rangeLabel}</p>
+                <p className="text-[10px] mt-1 text-zinc-500">{rangeLabel}</p>
+
+                {activeTasks.length > 0 && (
+                  <div className="mt-3 pt-2 border-t border-zinc-200">
+                    <p className="text-[9px] text-zinc-400 font-bold uppercase mb-1">Assigned Tasks</p>
+                    <div className="max-h-[80px] overflow-y-auto space-y-1 pr-1 [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+                      {activeTasks.map(([key, note]) => {
+                        const [startISO, endISO] = key.split("__");
+                        const sDate = new Date(startISO);
+                        const eDate = new Date(endISO);
+                        const label = `${sDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric'})} - ${eDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric'})}`;
+                        
+                        return (
+                          <button 
+                            key={key}
+                            type="button"
+                            onClick={() => {
+                              setRangeStart(sDate);
+                              setRangeEnd(eDate);
+                              const cur = monthStart(viewDate);
+                              const target = monthStart(sDate);
+                              if (target.getTime() !== cur.getTime() && flipPhase === "idle") {
+                                setPendingMonthTarget(target);
+                                setFlipPhase(target.getTime() > cur.getTime() ? "out-next" : "out-prev");
+                              }
+                            }}
+                            className="w-full text-left cursor-pointer text-[10px] bg-zinc-50/80 p-1.5 rounded hover:bg-zinc-100 flex flex-col gap-0.5 border border-zinc-100 focus:outline-none focus:ring-1 focus:ring-sky-200 transition-colors"
+                          >
+                            <span className="font-semibold text-sky-600 text-[9px] leading-tight">{label}</span>
+                            <span className="text-zinc-600 truncate leading-tight w-full" title={note}>{note}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* CALENDAR */}
