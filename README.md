@@ -1,10 +1,10 @@
 # Wall Calendar App
 
-A highly interactive, skeuomorphic wall calendar application built with Next.js, React, and Tailwind CSS. The interface mimics a real physical calendar hanging on a virtual wall.
+A highly interactive, realistic wall calendar application built with Next.js, React, and Tailwind CSS. The interface mimics a physical calendar hanging on a virtual wall.
 
 ## Design Choices & Features
 
-- **Skeuomorphic Details**: 
+- **Realistic Physical Details**: 
   - Modeled a realistic, rounded "nail head" flush against the wall at the top of the calendar.
   - Implemented 3D-like stacking on the right edge border, simulating layers of thick paper.
   - Included a realistic metallic spiral binding effect across the top edge.
@@ -13,6 +13,8 @@ A highly interactive, skeuomorphic wall calendar application built with Next.js,
   - Used Tailwind for rapid, inline styling, shadows, typography, and complex gradients that give the calendar its depth.
 - **Asset Consolidation**: 
   - Ensured all image assets (hero images for each month) are neatly referenced, pulling them from public assets to keep imports clean.
+- **Data Persistence**:
+  - Implemented client-side `localStorage` to ensure your monthly notes and assigned task ranges persist across browser refreshes.
 
 ## Getting Started
 

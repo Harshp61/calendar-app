@@ -415,7 +415,7 @@ export default function WallCalendar() {
               </div>
               {/* CONTENT PREVIEW */}
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.2fr] gap-4 px-4 py-4 bg-white">
-                <div className="flex flex-col h-full">
+                <div className="flex flex-col h-full min-w-0">
                   <p className="text-[11px] text-zinc-500 font-semibold mb-2">Notes</p>
                   <div className="flex-1 rounded bg-zinc-50 border border-zinc-100 p-2 text-xs text-zinc-600 overflow-hidden line-clamp-5">
                     {monthNotes[`${previewDate.getFullYear()}-${String(previewDate.getMonth() + 1).padStart(2, "0")}`] || ""}
@@ -505,7 +505,7 @@ export default function WallCalendar() {
             {/* CONTENT */}
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.2fr] gap-4 px-4 py-4 bg-white">
               {/* NOTES */}
-              <div>
+              <div className="min-w-0 flex flex-col h-full">
                 <div className="flex justify-between items-center mb-2">
                   <p className="text-[11px] text-zinc-500 font-semibold">Notes</p>
                   <button
@@ -546,7 +546,7 @@ export default function WallCalendar() {
                   onChange={(e) => handleRangeNoteChange(e.target.value)}
                   disabled={!selectedRangeKey}
                   placeholder="Select range first..."
-                  className="mt-1 w-full text-xs bg-zinc-50 border border-zinc-200 p-2 rounded outline-none disabled:opacity-60 min-h-[40px]"
+                  className="mt-1 w-full text-xs bg-zinc-50 border border-zinc-200 p-2 rounded outline-none disabled:opacity-60 min-h-[40px] resize-none"
                 />
 
                 <p className="text-[10px] mt-1 text-zinc-500">{rangeLabel}</p>
@@ -575,7 +575,7 @@ export default function WallCalendar() {
                                   setFlipPhase(target.getTime() > cur.getTime() ? "out-next" : "out-prev");
                                 }
                               }}
-                              className="flex-1 text-left cursor-pointer text-[10px] flex flex-col gap-0.5 focus:outline-none overflow-hidden"
+                              className="flex-1 text-left cursor-pointer text-[10px] flex flex-col gap-0.5 focus:outline-none overflow-hidden min-w-0"
                             >
                               <span className="font-semibold text-sky-600 text-[9px] leading-tight">{label}</span>
                               <span className="text-zinc-600 truncate leading-tight w-full" title={note}>{note}</span>
